@@ -22,8 +22,9 @@ class Ground extends Component {
     this.state = {
       snake: [],
       food: [],
-      status: 0,
-      direction: 40
+      status: 'Initialized',
+      direction: 40,
+      speed: 130
     };
     this.moveToward = this.moveToward.bind(this);
     this.startGame = this.startGame.bind(this);
@@ -40,10 +41,11 @@ class Ground extends Component {
         [5,7]
       ],
       food: [10,10],
-      status: 1
+      status: 'Running',
+      speed: 130
     });
 
-    this.moveSnakeInterval = setInterval(this.moveSnake, 130);
+    this.moveSnakeInterval = setInterval(this.moveSnake, this.state.speed);
 
     this.el.focus();
   }
@@ -68,7 +70,11 @@ class Ground extends Component {
         break;
     }
 
-    if (newPostion[0] && (this.isCollide(newPostion[0]) || this.selfBitten(newPostion[0])) ) {
+    if (!newPostion[0]) {
+      return;
+    }
+
+    if (this.isCollide(newPostion[0]) || this.selfBitten(newPostion[0])) {
       console.log("Game Over");
       console.log(this.state.snake.length);
       this.stopGame()
@@ -104,13 +110,20 @@ class Ground extends Component {
         snake: newSnake
       });
       this.moveFood();
+      
+      this.setState(prevState => ({
+        speed: prevState.speed-1
+      }));
+      if (this.moveSnakeInterval) clearInterval(this.moveSnakeInterval);
+      this.moveSnakeInterval = setInterval(this.moveSnake, this.state.speed);
+
     }
   };
 
   stopGame(){
     this.removeTimers();
     this.setState({
-      status : 2
+      status : 'Game Over'
     })
   }
 
@@ -149,7 +162,11 @@ class Ground extends Component {
       }
     });
 
-    if (changeDirection) this.setState({ direction: keyCode });
+    if (changeDirection) {
+      setTimeout(() => {
+        this.setState({ direction: keyCode });
+      }, 70);
+    }
   }
 
   render() {
@@ -170,6 +187,8 @@ class Ground extends Component {
     return (
       <div>
         <button onClick={this.startGame}>Start</button>
+        <span> Score: {this.state.snake.length}</span>
+        <span> Status: {this.state.status}</span>
         <div className="ground"
         onKeyDown={this.moveToward}
         style={{

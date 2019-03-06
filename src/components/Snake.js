@@ -22,7 +22,9 @@ class Ground extends Component {
             food: [],
             status: 'Initialized',
             direction: 40,
-            speed: 130
+            laziness: 130,
+            score: 0,
+            lockDirection: false
         };
         this.moveToward = this.moveToward.bind(this);
         this.startGame = this.startGame.bind(this);
@@ -35,16 +37,19 @@ class Ground extends Component {
 
     startGame() {
         this.removeTimers();
+        
+        const x = parseInt(Math.random() * this.props.size);
+        const y = parseInt(Math.random() * this.props.size);
+
         this.setState({
-            snake: [
-                [5, 7]
-            ],
-            food: [10, 10],
-            status: 'Running',
-            speed: 130
+          snake: [[5, 7]],
+          food: [x, y],
+          status: "Running",
+          laziness: 130,
+          score: 0
         });
 
-        this.moveSnakeInterval = setInterval(this.moveSnake, this.state.speed);
+        this.moveSnakeInterval = setInterval(this.moveSnake, this.state.laziness);
 
         this.el.focus();
     }
@@ -87,7 +92,10 @@ class Ground extends Component {
             })
         );
 
-        this.setState({ snake: newPostion });
+        this.setState({ 
+            snake: newPostion,
+            lockDirection: false,
+        });
         // console.log(newPostion);
 
         this.eatFood(newPostion[0]);
@@ -106,18 +114,23 @@ class Ground extends Component {
             let newSnake = this.state.snake;
             newSnake.push([-1, 1]);
             this.setState({
-                snake: newSnake
+              snake: newSnake
             });
             this.moveFood();
 
-            // subtracting the speed actually increase the speed as speed is time in interval
+            // subtracting the laziness actually increase the speed
             this.setState(prevState => ({
-                speed: prevState.speed - 1
+              laziness: prevState.laziness - 1
+            }));
+
+            this.setState(prevState => ({
+                score:
+                    prevState.snake.length * (130 - prevState.laziness)
             }));
 
             if (this.moveSnakeInterval) {
                 clearInterval(this.moveSnakeInterval);
-                this.moveSnakeInterval = setInterval(this.moveSnake, this.state.speed);
+                this.moveSnakeInterval = setInterval(this.moveSnake, this.state.laziness);
             }
         }
     };
@@ -127,6 +140,15 @@ class Ground extends Component {
         this.setState({
             status: 'Game Over'
         })
+
+        fetch("http://localhost:3000/", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(this.state)
+        });
     }
 
     removeTimers() {
@@ -164,10 +186,11 @@ class Ground extends Component {
             }
         });
 
-        if (changeDirection) {
-            setTimeout(() => {
-                this.setState({ direction: keyCode });
-            }, 70);
+        if (changeDirection && this.state.lockDirection===false && [38, 40, 37, 39].indexOf(keyCode) > -1) {
+            this.setState({
+                direction: keyCode,
+                lockDirection: true
+            });            
         }
     }
 
@@ -187,36 +210,50 @@ class Ground extends Component {
         });
 
         return (
-            <div>
-                <div className="row card">
-                    <span> Score: {this.state.snake.length * (130-this.state.speed)}</span>
-                    <span> Status: {this.state.status}</span>
-                    <span> Laziness: {this.state.speed}</span>
-                </div>
-                <hr />
-                <div className="row">
-                    <div className="d-inline-flex">
-                        <button onClick={this.startGame} className="btn btn-primary">
-                            Start
-            </button>
-                        <div
-                            className="ground"
-                            onKeyDown={this.moveToward}
-                            style={{
-                                width: this.props.size * 15 + "px",
-                                height: this.props.size * 15 + "px"
-                            }}
-                            ref={el => (this.el = el)}
-                            tabIndex={-1}
-                        >
-                            {cells}
-                        </div>
-
-                    </div>
-                </div>
+          <div>
+            <div className="row card">
+              <span> Score: {this.state.score}
+              </span>
+              <span> Status: {this.state.status}</span>
+              <span> Laziness: {this.state.laziness}</span>
             </div>
+            <hr />
+                {this.state.status === 'Game Over' ? <LoginModal /> : null }
+            <div className="row">
+              <div className="d-inline-flex">
+                <button
+                  onClick={this.startGame}
+                  className="btn btn-primary"
+                  disabled={this.state.status === 'Running' ? true : false}>
+                  Start
+                </button>
+                <div
+                  className="ground"
+                  onKeyDown={this.moveToward}
+                  style={{
+                    width: this.props.size * 15 + "px",
+                    height: this.props.size * 15 + "px"
+                  }}
+                  ref={el => (this.el = el)}
+                  tabIndex={-1}
+                >
+                  {cells}
+                </div>
+              </div>
+            </div>
+          </div>
         );
     }
+}
+
+class LoginModal extends Component {
+    render() {
+        return(
+            <div>
+                Open Login Modal
+            </div>
+        );
+    };
 }
 
 export default Ground;

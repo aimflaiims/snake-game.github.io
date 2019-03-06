@@ -18,6 +18,26 @@ const Home = () => {
 }
 
 class App extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      loggedIn: false,
+      username: null,
+      user_id: null,
+    };
+
+    this.login = this.login.bind(this);
+  }
+
+  login(data) {
+    this.setState({
+      loggedIn: true,
+      username: data.username,
+      user_id: data.user_id,
+    });
+  }
+
   render() {
     return (
       <BrowserRouter>
@@ -26,7 +46,7 @@ class App extends Component {
           <hr/>
           <Switch>
             <Route path="/" component={Home} exact />
-            <Route path="/login" component={Login} />
+            <Route path="/login" component={Login} login={this.login} />
             <Route component={Error404} />
           </Switch>
         </div>

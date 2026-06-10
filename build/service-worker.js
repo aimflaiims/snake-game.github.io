@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/3.6.3/workbox-sw.js");
 
 importScripts(
-  "/snake-game.github.io/precache-manifest.808dc7cdfbfec128a9680d0171bfc7d6.js"
+  "/snake-game.github.io/precache-manifest.eefcc840e81ce568649a5cb3316501b5.js"
 );
 
 workbox.clientsClaim();

@@ -33,6 +33,11 @@ class Ground extends Component {
         this.stopGame = this.stopGame.bind(this);
         this.removeTimers = this.removeTimers.bind(this);
         this.selfBitten = this.selfBitten.bind(this);
+        this.gameLoop = this.gameLoop.bind(this);
+
+        this.animationFrame = null;
+        this.lastFrameTime = 0;
+        this.accumulator = 0;
     }
 
     startGame() {
@@ -47,11 +52,35 @@ class Ground extends Component {
           status: "Running",
           laziness: 130,
           score: 0
+        }, () => {
+            this.lastFrameTime = 0;
+            this.accumulator = 0;
+            this.animationFrame = window.requestAnimationFrame(this.gameLoop);
         });
 
-        this.moveSnakeInterval = setInterval(this.moveSnake, this.state.laziness);
-
         this.el.focus();
+    }
+
+    gameLoop(timestamp) {
+        if (this.state.status !== 'Running') {
+            return;
+        }
+
+        if (!this.lastFrameTime) {
+            this.lastFrameTime = timestamp;
+        }
+
+        const delta = timestamp - this.lastFrameTime;
+        this.lastFrameTime = timestamp;
+        this.accumulator += delta;
+
+        const step = Math.max(this.state.laziness, 50);
+        while (this.accumulator >= step) {
+            this.moveSnake();
+            this.accumulator -= step;
+        }
+
+        this.animationFrame = window.requestAnimationFrame(this.gameLoop);
     }
 
     moveSnake() {
@@ -111,27 +140,16 @@ class Ground extends Component {
 
     eatFood(snakeHead) {
         if (snakeHead[0] === this.state.food[0] && snakeHead[1] === this.state.food[1]) {
-            let newSnake = this.state.snake;
-            newSnake.push([-1, 1]);
-            this.setState({
-              snake: newSnake
+            const newSnake = this.state.snake.concat([[-1, 1]]);
+            this.setState(prevState => {
+                const nextLaziness = Math.max(prevState.laziness - 1, 50);
+                return {
+                    snake: newSnake,
+                    laziness: nextLaziness,
+                    score: newSnake.length * (130 - nextLaziness)
+                };
             });
             this.moveFood();
-
-            // subtracting the laziness actually increase the speed
-            this.setState(prevState => ({
-              laziness: prevState.laziness - 1
-            }));
-
-            this.setState(prevState => ({
-                score:
-                    prevState.snake.length * (130 - prevState.laziness)
-            }));
-
-            if (this.moveSnakeInterval) {
-                clearInterval(this.moveSnakeInterval);
-                this.moveSnakeInterval = setInterval(this.moveSnake, this.state.laziness);
-            }
         }
     };
 
@@ -152,8 +170,15 @@ class Ground extends Component {
     }
 
     removeTimers() {
-        if (this.moveSnakeInterval) clearInterval(this.moveSnakeInterval);
+        if (this.animationFrame) {
+            window.cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
         if (this.moveFoodTimeout) clearTimeout(this.moveFoodTimeout)
+    }
+
+    componentWillUnmount() {
+        this.removeTimers();
     }
 
     selfBitten(snakeHead) {

@@ -7,8 +7,18 @@ const Cell = (props) => {
   ${props.snake ? "cell--snake" : ""}
   `;
 
+    const style = props.snake && props.offsetX !== undefined
+        ? {
+            position: 'absolute',
+            width: '15px',
+            height: '15px',
+            transform: `translate(${props.offsetX}px, ${props.offsetY}px)`,
+            transition: 'transform 0.1s ease-in-out'
+          }
+        : { width: '15px', height: '15px' };
+
     return (
-        <div className={className} style={{ width: '15px', height: '15px' }}>
+        <div className={className} style={style}>
 
         </div>
     );
@@ -228,8 +238,11 @@ class Ground extends Component {
                 // console.log(isSnake);
                 isSnake = isSnake.length && isSnake[0];
 
+                const offsetX = x * 15;
+                const offsetY = y * 15;
+
                 return (
-                    <Cell snake={isSnake} food={isFood} key={x + "," + y} />
+                    <Cell snake={isSnake} food={isFood} offsetX={offsetX} offsetY={offsetY} key={x + "," + y} />
                 );
             });
         });
